@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speed Reader</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      flex-direction: column;
+      font-family: Arial, sans-serif;
+    }
+    #topBar {
+      display: flex;
+      justify-content: space-between;
+      width: 80%;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+    #statsDisplay {
+      text-align: right;
+    }
+    #wordDisplay {
+      font-size: 4em;
+      text-align: center;
+      margin-top: 20px;
+      min-height: 1.2em;
+      font-family: monospace;
+    }
+    .highlight {
+      color: red;
+    }
+    textarea {
+      width: 80%;
+      margin-bottom: 10px;
+      font-size: 1em;
+      padding: 5px;
+      background: #111;
+      color: #aaa;
+      border: 1px solid #333;
+      border-radius: 5px;
+      resize: none;
+      height: 100px;
+    }
+    .inputs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .inputs input {
+      width: 50px;
+      font-size: 1em;
+      padding: 3px;
+      text-align: center;
+      background: #111;
+      color: white;
+      border: 1px solid #333;
+      border-radius: 3px;
+    }
+    .inputs label {
+      font-size: 0.9em;
+      color: #ccc;
+    }
+    select, .inputs input[type=checkbox] {
+      background: #111;
+      color: white;
+      border: 1px solid #333;
+      border-radius: 3px;
+      padding: 3px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 5px;
+      transition: background 0.2s;
+    }
+    #startBtn.start {
+      background-color: green;
+      color: white;
+    }
+    #startBtn.stop {
+      background-color: red;
+      color: white;
+    }
+    #spaceHint {
+      color: #666;
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+    .word-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .left, .right {
+      display: inline-block;
+      min-width: 6ch;
+      text-align: right;
+    }
+    .right {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div id="topBar">
+    <div id="timerDisplay">Time: 0.0s</div>
+    <div id="statsDisplay">Words: 0 | Read: 0 | Paragraphs: 0 | Final WPM: -</div>
+  </div>
+  <textarea id="inputText" placeholder="Paste your text here..." title="Enter the text you would like to read here"></textarea>
+  <div class="inputs">
+    <label for="speedInput">WPM</label>
+    <input id="speedInput" type="number" placeholder="500" title="Set words per minute speed" />
+    <label for="pauseInput">Pause</label>
+    <input id="pauseInput" type="number" placeholder="2" title="Pause multiplier for punctuation" />
+    <label for="colorSelect">Highlight</label>
+    <select id="colorSelect" title="Choose highlight color">
+      <option value="red" selected>Red</option>
+      <option value="yellow">Yellow</option>
+      <option value="lime">Green</option>
+      <option value="cyan">Cyan</option>
+    </select>
+    <label title="Toggle chunking mode"><input id="chunkToggle" type="checkbox" /> Chunking</label>
+  </div>
+  <button id="startBtn" class="start" title="Start or stop reading">Start</button>
+  <div id="wordDisplay"></div>
+  <div id="spaceHint">Press SPACE to begin reading</div>
+
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const inputText = document.getElementById('inputText');
+    const wordDisplay = document.getElementById('wordDisplay');
+    const speedInput = document.getElementById('speedInput');
+    const pauseInput = document.getElementById('pauseInput');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const statsDisplay = document.getElementById('statsDisplay');
+    const colorSelect = document.getElementById('colorSelect');
+    const chunkToggle = document.getElementById('chunkToggle');
+    const spaceHint = document.getElementById('spaceHint');
+
+    let words = [];
+    let currentIndex = 0;
+    let intervalId;
+    let isSpaceHeld = false;
+    let isRunning = false;
+
+    let wpm = 500;
+    let baseDelay = 60000 / wpm;
+    let stopPauseMultiplier = 2;
+
+    let timer = 0;
+    let timerInterval;
+
+    let totalWords = 0;
+    let totalParagraphs = 0;
+    let wordsRead = 0;
+    let startTime = 0;
+
+    function updateSettings() {
+      wpm = parseInt(speedInput.value) || 500;
+      baseDelay = 60000 / wpm;
+      stopPauseMultiplier = parseFloat(pauseInput.value) || 2;
+    }
+
+    function highlightMiddle(word) {
+      if (!word) return '';
+      const mid = Math.floor(word.length / 2);
+      const before = word.substring(0, mid);
+      const letter = word[mid];
+      const after = word.substring(mid + 1);
+
+      return `<div class="word-container"><span class="left">${before}</span>` +
+             `<span class="highlight" style="color:${colorSelect.value}">${letter}</span>` +
+             `<span class="right">${after}</span></div>`;
+    }
+
+    function getDelay(word, isChunked) {
+      let delay = baseDelay;
+      if (/[.!?]/.test(word[word.length - 1])) delay *= stopPauseMultiplier;
+      if (/[,;]/.test(word[word.length - 1])) delay *= 1.5;
+      if (/\n/.test(word)) delay *= 2.5;
+      if (word.length > 5) {
+        let multiple = Math.floor(word.length / 5);
+        delay *= multiple;
+      }
+      if (isChunked) delay *= 1.5; // chunking 50% longer
+      return delay;
+    }
+
+    function showWord() {
+      if (currentIndex >= words.length) {
+        stopReading(true);
+        return;
+      }
+
+      let displayWord;
+      let isChunked = false;
+
+      if (chunkToggle.checked) {
+        const nextTwo = words.slice(currentIndex, currentIndex + 2);
+        if (nextTwo.length === 2 && nextTwo[0].length <= 3 && nextTwo[1].length <= 3) {
+          displayWord = nextTwo.join(' ');
+          currentIndex += 2;
+          isChunked = true;
+        } else {
+          displayWord = words[currentIndex];
+          currentIndex++;
+        }
+      } else {
+        displayWord = words[currentIndex];
+        currentIndex++;
+      }
+
+      if (isChunked) {
+        wordDisplay.textContent = displayWord; // no highlight for chunked
+      } else {
+        wordDisplay.innerHTML = highlightMiddle(displayWord);
+      }
+
+      wordsRead += isChunked ? 2 : 1;
+      updateStats();
+
+      const delay = getDelay(displayWord, isChunked);
+      intervalId = setTimeout(() => {
+        if (isSpaceHeld && isRunning) showWord();
+      }, delay);
+    }
+
+    function startReading() {
+      updateSettings();
+      words = inputText.value.split(/\s+/);
+      totalWords = words.length;
+      totalParagraphs = inputText.value.split(/\n+/).length;
+      if (currentIndex >= words.length) currentIndex = 0;
+      isRunning = true;
+      startBtn.textContent = 'Stop';
+      startBtn.classList.remove('start');
+      startBtn.classList.add('stop');
+      startTime = Date.now();
+      updateStats();
+      spaceHint.style.display = 'none';
+    }
+
+    function stopReading(finished = false) {
+      clearTimeout(intervalId);
+      isRunning = false;
+      startBtn.textContent = 'Start';
+      startBtn.classList.remove('stop');
+      startBtn.classList.add('start');
+      if (finished) {
+        const elapsedMinutes = (Date.now() - startTime) / 60000;
+        const finalWPM = Math.round(wordsRead / elapsedMinutes);
+        statsDisplay.textContent += ` | Final WPM: ${finalWPM}`;
+      }
+    }
+
+    function startTimer() {
+      if (!timerInterval) {
+        timerInterval = setInterval(() => {
+          timer += 0.1;
+          timerDisplay.textContent = `Time: ${timer.toFixed(1)}s`;
+        }, 100);
+      }
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function updateStats() {
+      statsDisplay.textContent = `Words: ${totalWords} | Read: ${wordsRead} | Paragraphs: ${totalParagraphs} | Final WPM: -`;
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (isRunning) {
+        stopReading();
+        stopTimer();
+      } else {
+        startReading();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !isSpaceHeld && isRunning && document.activeElement !== inputText && document.activeElement !== speedInput && document.activeElement !== pauseInput) {
+        e.preventDefault();
+        isSpaceHeld = true;
+        startTimer();
+        showWord();
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        isSpaceHeld = false;
+        clearTimeout(intervalId);
+        stopTimer();
+      }
+    });
+  </script>
+</body>
+</html>
