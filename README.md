@@ -1,10 +1,10 @@
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. In vel mauris egestas, venenatis libero in, egestas dolor. Nulla scelerisque eu leo vel placerat. Donec bibendum aliquam urna sed iaculis. Pellentesque mi tellus, luctus a eros at, dapibus facilisis elit. Nam vehicula luctus purus, id vestibulum erat maximus non. Nullam ut pharetra nulla. Morbi volutpat aliquet nisl, faucibus ullamcorper sapien consequat ac. Vivamus fringilla nibh eget nunc commodo, quis posuere tellus elementum. Sed eget congue justo. Nam eu eleifend ante.
+To run:  
+1. Download and save HTML File
+2. Once installed Right click and select open with..
+3. run using browser of choice 
 
-Suspendisse sed sem sed urna tristique auctor id id sapien. Sed id lacus euismod, luctus mi et, imperdiet arcu. Proin ultricies pulvinar felis, nec condimentum lorem porttitor at. Cras at massa nisl. Integer non euismod nunc, quis mattis nibh. Pellentesque nec ornare purus, id tristique est. Nulla rutrum nulla nunc, ac tempus magna bibendum a. Phasellus at erat et massa pretium luctus vitae in risus. Mauris pulvinar, ante nec congue rutrum, enim augue ultricies arcu, sit amet sodales turpis leo id nibh. Aliquam lobortis sagittis risus eget placerat. Suspendisse eget blandit metus.
-
-In at malesuada sem, nec malesuada massa. Sed ultricies eros sit amet dolor blandit lacinia. Curabitur maximus massa porta neque mollis, a mollis nisl commodo. Mauris ullamcorper justo eget accumsan cursus. Integer ut velit vitae sapien placerat tincidunt volutpat nec ex. Proin non diam lectus. Maecenas in ipsum id massa mollis consequat. Aliquam et feugiat neque. Praesent a diam eu ante finibus lacinia eu vitae neque.
-
-Aenean eu risus nec ante aliquam volutpat. Integer sapien ligula, ornare non semper quis, cursus ac libero. Maecenas non sem volutpat, vestibulum nunc pellentesque, lobortis velit. Fusce iaculis rutrum orci, eu elementum erat placerat eu. Etiam congue ac urna in consequat. In hac habitasse platea dictumst. Aenean tincidunt semper eleifend. Sed quis magna sed massa iaculis scelerisque sit amet eget diam. In ac risus laoreet, tempor sem eget, convallis purus. In imperdiet urna massa, scelerisque pellentesque nisi ornare non. Nunc vel libero non sem interdum aliquam. Pellentesque vel turpis sed lorem cursus scelerisque pharetra in lacus. Vivamus nec laoreet arcu. Mauris sodales tincidunt ipsum at vestibulum.
-
-Suspendisse nec elit eleifend, suscipit purus et, condimentum mi. Suspendisse faucibus lobortis massa, accumsan accumsan lacus dignissim ut. Morbi non lorem eu neque pretium tempor a eu ante. Cras ex ex, sollicitudin ac enim hendrerit, euismod vulputate purus. Maecenas sollicitudin sit amet nunc sed mattis. Aliquam at varius sem, eu convallis odio. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc id est eu quam scelerisque convallis in in justo. Nunc ut condimentum massa. Sed blandit nunc risus, eu sodales metus porttitor a.
-
+To use: 
+- Enter Text you would like to read into the Main text Box 
+- Select perfered reading speed, optional delays, reading assists
+- click start
+- hold down the space bar while reading, release to pause
