@@ -1,312 +1,354 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Speed Reader</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RSVP reader v.1.01</title>
   <style>
-    body {
-      background-color: black;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      flex-direction: column;
-      font-family: Arial, sans-serif;
+    :root{--bg:#000;--panel:#111;--muted:#888;--text:#eee;--accent:#e53935}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box;
     }
-    #topBar {
-      display: flex;
-      justify-content: space-between;
-      width: 80%;
-      margin-bottom: 10px;
-      font-size: 1.2em;
+    .app{
+      width:100%; max-width:980px;
     }
-    #statsDisplay {
-      text-align: right;
+    .title{
+      text-align:center; margin-bottom:12px; font-weight:700; color:#bdbdbd; font-size:20px;
     }
-    #wordDisplay {
-      font-size: 4em;
-      text-align: center;
-      margin-top: 20px;
-      min-height: 1.2em;
-      font-family: monospace;
+    .title .v{ color:var(--accent); }
+
+    #topBar{
+      display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%;
+      margin-bottom:10px;
     }
-    .highlight {
-      color: red;
+    .left, .center, .right { display:flex; align-items:center; gap:8px }
+    .timer{ color:var(--muted); font-weight:600 }
+    .stats{ color:#ddd; font-size:14px }
+    .wpm{ color:#ffd54f; font-weight:700 }
+
+    textarea#inputText{
+      width:100%; height:120px; resize:vertical; min-height:80px; max-height:260px;
+      background:var(--panel); color:#cfcfcf; border:1px solid #262626; border-radius:6px; padding:10px; font-size:14px;
+      box-sizing:border-box; outline:none;
     }
-    textarea {
-      width: 80%;
-      margin-bottom: 10px;
-      font-size: 1em;
-      padding: 5px;
-      background: #111;
-      color: #aaa;
-      border: 1px solid #333;
-      border-radius: 5px;
-      resize: none;
-      height: 100px;
-    }
-    .inputs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      align-items: center;
-    }
-    .inputs input {
-      width: 50px;
-      font-size: 1em;
-      padding: 3px;
-      text-align: center;
-      background: #111;
-      color: white;
-      border: 1px solid #333;
-      border-radius: 3px;
-    }
-    .inputs label {
-      font-size: 0.9em;
-      color: #ccc;
-    }
-    select, .inputs input[type=checkbox] {
-      background: #111;
-      color: white;
-      border: 1px solid #333;
-      border-radius: 3px;
-      padding: 3px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 1.2em;
-      cursor: pointer;
-      margin-bottom: 10px;
-      border: none;
-      border-radius: 5px;
-      transition: background 0.2s;
-    }
-    #startBtn.start {
-      background-color: green;
-      color: white;
-    }
-    #startBtn.stop {
-      background-color: red;
-      color: white;
-    }
-    #spaceHint {
-      color: #666;
-      margin-top: 10px;
-      font-size: 0.9em;
-    }
-    .word-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .left, .right {
-      display: inline-block;
-      min-width: 6ch;
-      text-align: right;
-    }
-    .right {
-      text-align: left;
+
+    .controls{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .controls label{ color:var(--muted); font-size:13px }
+    .controls input[type=number]{ width:56px; padding:6px 6px; border-radius:4px; background:var(--panel); color:var(--text); border:1px solid #262626; text-align:center }
+    .controls select{ padding:6px 8px; border-radius:4px; background:var(--panel); color:var(--text); border:1px solid #262626 }
+    .controls .checkbox{ display:flex; align-items:center; gap:6px; color:var(--muted); }
+
+    .buttons{ margin-top:12px; display:flex; gap:8px; }
+    button{ padding:10px 18px; border-radius:6px; font-weight:700; cursor:pointer; border:0 }
+    button.start{ background:#2e7d32; color:white }
+    button.stop{ background:#b71c1c; color:white }
+    button.reset{ background:#424242; color:white }
+
+    #wordDisplay{ margin-top:24px; height:120px; display:flex; align-items:center; justify-content:center }
+    .word-box{ font-family:monospace; font-size:52px; line-height:1; color:var(--text); text-align:center }
+    .word-container{ display:flex; align-items:center; justify-content:center }
+    .left, .right{ display:inline-block; white-space:pre; font-size:inherit }
+    .center-letter{ display:inline-block; padding:0 2px; font-weight:800 }
+
+    #hint{ color:#707070; text-align:center; margin-top:8px; font-size:14px }
+
+    @media (max-width:600px){
+      .word-box{ font-size:36px }
+      .controls{ flex-wrap:wrap }
     }
   </style>
 </head>
 <body>
-  <div id="topBar">
-    <div id="timerDisplay">Time: 0.0s</div>
-    <div id="statsDisplay">Words: 0 | Read: 0 | Paragraphs: 0 | Final WPM: -</div>
+  <div class="app">
+    <div class="title">RS<span class="v">V</span>P reader v.1.01</div>
+
+    <div id="topBar">
+      <div class="left"><div class="timer" id="timerDisplay">Time: 0.0s</div></div>
+      <div class="center"><div class="stats" id="statsDisplay">Words: 0 • Read: 0 • Paragraphs: 0</div></div>
+      <div class="right"><div class="wpm" id="wpmDisplay">WPM: -</div></div>
+    </div>
+
+    <textarea id="inputText" title="Enter the text you would like to read here" placeholder="Paste your text here..."></textarea>
+
+    <div class="controls" style="margin-top:8px">
+      <label for="speedInput">WPM</label>
+      <input id="speedInput" type="number" title="Words per minute (e.g. 500)" placeholder="500" />
+
+      <label for="pauseInput">Pause</label>
+      <input id="pauseInput" type="number" title="Pause multiplier for full stops (e.g. 2)" placeholder="2" />
+
+      <label for="colorSelect">Highlight</label>
+      <select id="colorSelect" title="Highlight color for center letter">
+        <option value="#e53935">Red</option>
+        <option value="#ffd600">Yellow</option>
+        <option value="#00e676">Green</option>
+        <option value="#00bcd4">Cyan</option>
+      </select>
+
+      <label class="checkbox" title="Enable chunking: two short words will display together"><input id="chunkToggle" type="checkbox" /> Chunking</label>
+    </div>
+
+    <div class="buttons">
+      <button id="startBtn" class="start" title="Start or Stop reading">Start</button>
+      <button id="resetBtn" class="reset" title="Reset to the beginning and clear stats">Reset</button>
+    </div>
+
+    <div id="wordDisplay">
+      <div class="word-box" id="wordBox"></div>
+    </div>
+    <div id="hint">Hold space bar to start</div>
   </div>
-  <textarea id="inputText" placeholder="Paste your text here..." title="Enter the text you would like to read here"></textarea>
-  <div class="inputs">
-    <label for="speedInput">WPM</label>
-    <input id="speedInput" type="number" placeholder="500" title="Set words per minute speed" />
-    <label for="pauseInput">Pause</label>
-    <input id="pauseInput" type="number" placeholder="2" title="Pause multiplier for punctuation" />
-    <label for="colorSelect">Highlight</label>
-    <select id="colorSelect" title="Choose highlight color">
-      <option value="red" selected>Red</option>
-      <option value="yellow">Yellow</option>
-      <option value="lime">Green</option>
-      <option value="cyan">Cyan</option>
-    </select>
-    <label title="Toggle chunking mode"><input id="chunkToggle" type="checkbox" /> Chunking</label>
-  </div>
-  <button id="startBtn" class="start" title="Start or stop reading">Start</button>
-  <div id="wordDisplay"></div>
-  <div id="spaceHint">Press SPACE to begin reading</div>
 
-  <script>
-    const startBtn = document.getElementById('startBtn');
-    const inputText = document.getElementById('inputText');
-    const wordDisplay = document.getElementById('wordDisplay');
-    const speedInput = document.getElementById('speedInput');
-    const pauseInput = document.getElementById('pauseInput');
-    const timerDisplay = document.getElementById('timerDisplay');
-    const statsDisplay = document.getElementById('statsDisplay');
-    const colorSelect = document.getElementById('colorSelect');
-    const chunkToggle = document.getElementById('chunkToggle');
-    const spaceHint = document.getElementById('spaceHint');
+<script>
+(() => {
+  const inputText = document.getElementById('inputText');
+  const speedInput = document.getElementById('speedInput');
+  const pauseInput = document.getElementById('pauseInput');
+  const colorSelect = document.getElementById('colorSelect');
+  const chunkToggle = document.getElementById('chunkToggle');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const wordBox = document.getElementById('wordBox');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const statsDisplay = document.getElementById('statsDisplay');
+  const wpmDisplay = document.getElementById('wpmDisplay');
+  const hint = document.getElementById('hint');
 
-    let words = [];
-    let currentIndex = 0;
-    let intervalId;
-    let isSpaceHeld = false;
-    let isRunning = false;
+  let words = [];
+  let currentIndex = 0;
+  let totalWords = 0;
+  let totalParagraphs = 0;
+  let wordsRead = 0;
 
-    let wpm = 500;
-    let baseDelay = 60000 / wpm;
-    let stopPauseMultiplier = 2;
+  let wpm = 500;
+  let pauseMultiplier = 2;
 
-    let timer = 0;
-    let timerInterval;
+  let isRunning = false;
+  let isSpaceHeld = false;
 
-    let totalWords = 0;
-    let totalParagraphs = 0;
-    let wordsRead = 0;
-    let startTime = 0;
+  let intervalId = null;
+  let timerInterval = null;
+  let timer = 0;
+  let lastTimerTick = null;
 
-    function updateSettings() {
-      wpm = parseInt(speedInput.value) || 500;
-      baseDelay = 60000 / wpm;
-      stopPauseMultiplier = parseFloat(pauseInput.value) || 2;
-    }
-
-    function highlightMiddle(word) {
-      if (!word) return '';
-      const mid = Math.floor(word.length / 2);
-      const before = word.substring(0, mid);
-      const letter = word[mid];
-      const after = word.substring(mid + 1);
-
-      return `<div class="word-container"><span class="left">${before}</span>` +
-             `<span class="highlight" style="color:${colorSelect.value}">${letter}</span>` +
-             `<span class="right">${after}</span></div>`;
-    }
-
-    function getDelay(word, isChunked) {
-      let delay = baseDelay;
-      if (/[.!?]/.test(word[word.length - 1])) delay *= stopPauseMultiplier;
-      if (/[,;]/.test(word[word.length - 1])) delay *= 1.5;
-      if (/\n/.test(word)) delay *= 2.5;
-      if (word.length > 5) {
-        let multiple = Math.floor(word.length / 5);
-        delay *= multiple;
+  function parseText() {
+    const raw = inputText.value.replace(/\r/g, '');
+    const paras = raw.split(/\n+/);
+    words = [];
+    for (let i = 0; i < paras.length; i++) {
+      const seg = paras[i].trim();
+      if (!seg) continue;
+      const segWords = seg.split(/\s+/).filter(Boolean);
+      for (let w of segWords) words.push(w);
+      if (i < paras.length - 1 && segWords.length > 0) {
+        words[words.length - 1] += '\n';
       }
-      if (isChunked) delay *= 1.5; // chunking 50% longer
-      return delay;
     }
+    totalWords = words.length;
+    totalParagraphs = paras.filter(p => p.trim().length > 0).length;
+  }
 
-    function showWord() {
-      if (currentIndex >= words.length) {
-        stopReading(true);
-        return;
-      }
+  function updateSettings() {
+    wpm = parseInt(speedInput.value) || 500;
+    pauseMultiplier = parseFloat(pauseInput.value) || 2;
+  }
 
-      let displayWord;
-      let isChunked = false;
+  function updateStatsDisplay(finalWpm = '-') {
+    statsDisplay.textContent = `Words: ${totalWords} • Read: ${wordsRead} • Paragraphs: ${totalParagraphs}`;
+    if (isRunning && isSpaceHeld) {
+      const live = computeFinalWpm();
+      wpmDisplay.textContent = `WPM: ${live}`;
+    } else {
+      wpmDisplay.textContent = `WPM: ${finalWpm}`;
+    }
+  }
 
-      if (chunkToggle.checked) {
-        const nextTwo = words.slice(currentIndex, currentIndex + 2);
-        if (nextTwo.length === 2 && nextTwo[0].length <= 3 && nextTwo[1].length <= 3) {
-          displayWord = nextTwo.join(' ');
-          currentIndex += 2;
-          isChunked = true;
-        } else {
-          displayWord = words[currentIndex];
-          currentIndex++;
-        }
+  function clean(s){ return s ? s.replace(/\n/g,'') : s; }
+
+  function highlightMiddle(word) {
+    const cleanWord = clean(word);
+    if (!cleanWord) return '';
+    const mid = Math.floor(cleanWord.length / 2);
+    const before = cleanWord.slice(0, mid);
+    const letter = cleanWord[mid] || '';
+    const after = cleanWord.slice(mid + 1);
+    return `<span class="word-container"><span class="left">${before}</span>`+
+           `<span class="center-letter" style="color:${colorSelect.value}">${letter}</span>`+
+           `<span class="right">${after}</span></span>`;
+  }
+
+  function getDelay(displayText, isChunked) {
+    const cleanText = clean(displayText);
+    let delay = 60000 / wpm;
+    const lastChar = displayText[displayText.length - 1] || '';
+    if (lastChar === '\n') {
+      delay *= 2.5;
+    } else if (/[.!?]$/.test(displayText)) {
+      delay *= pauseMultiplier;
+    } else if (/[,;:]$/.test(displayText)) {
+      delay *= 1.5;
+    }
+    if (cleanText.length > 5) {
+      const multiple = Math.floor(cleanText.length / 5);
+      if (multiple > 1) delay *= multiple;
+    }
+    if (isChunked) delay *= 1.5;
+    return Math.max(40, Math.round(delay));
+  }
+
+  function computeFinalWpm() {
+    if (timer <= 0.0001) return '-';
+    const w = Math.round((wordsRead / timer) * 60);
+    return w;
+  }
+
+  function showWord() {
+    clearTimeout(intervalId);
+    if (currentIndex >= words.length) {
+      finishReading();
+      return;
+    }
+    let displayText = words[currentIndex];
+    let isChunked = false;
+    if (chunkToggle.checked) {
+      const next = words[currentIndex + 1];
+      if (next && clean(displayText).length <= 3 && clean(next).length <= 3) {
+        displayText = clean(displayText) + ' ' + clean(next);
+        currentIndex += 2;
+        isChunked = true;
       } else {
-        displayWord = words[currentIndex];
-        currentIndex++;
+        currentIndex += 1;
       }
-
-      if (isChunked) {
-        wordDisplay.textContent = displayWord; // no highlight for chunked
-      } else {
-        wordDisplay.innerHTML = highlightMiddle(displayWord);
-      }
-
-      wordsRead += isChunked ? 2 : 1;
-      updateStats();
-
-      const delay = getDelay(displayWord, isChunked);
-      intervalId = setTimeout(() => {
-        if (isSpaceHeld && isRunning) showWord();
-      }, delay);
+    } else {
+      currentIndex += 1;
     }
-
-    function startReading() {
-      updateSettings();
-      words = inputText.value.split(/\s+/);
-      totalWords = words.length;
-      totalParagraphs = inputText.value.split(/\n+/).length;
-      if (currentIndex >= words.length) currentIndex = 0;
-      isRunning = true;
-      startBtn.textContent = 'Stop';
-      startBtn.classList.remove('start');
-      startBtn.classList.add('stop');
-      startTime = Date.now();
-      updateStats();
-      spaceHint.style.display = 'none';
+    if (isChunked) {
+      wordBox.textContent = displayText.replace(/\n/g, ' ');
+    } else {
+      wordBox.innerHTML = highlightMiddle(displayText.replace(/\n/g, ''));
     }
+    wordsRead += isChunked ? 2 : 1;
+    updateStatsDisplay('-');
+    const delay = getDelay(displayText, isChunked);
+    intervalId = setTimeout(() => {
+      if (isSpaceHeld && isRunning) showWord();
+    }, delay);
+  }
 
-    function stopReading(finished = false) {
+  function startTimer() {
+    if (timerInterval) return;
+    lastTimerTick = Date.now();
+    timerInterval = setInterval(() => {
+      const now = Date.now();
+      timer += (now - lastTimerTick) / 1000;
+      lastTimerTick = now;
+      timerDisplay.textContent = `Time: ${timer.toFixed(1)}s`;
+      updateStatsDisplay('-');
+    }, 100);
+  }
+
+  function stopTimer() {
+    if (!timerInterval) return;
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  function startReading() {
+    updateSettings();
+    parseText();
+    if (currentIndex >= words.length) currentIndex = 0;
+    isRunning = true;
+    startBtn.textContent = 'Stop'; startBtn.classList.remove('start'); startBtn.classList.add('stop');
+    hint.style.display = 'none';
+    updateStatsDisplay('-');
+  }
+
+  function finishReading() {
+    isSpaceHeld = false;
+    isRunning = false;
+    clearTimeout(intervalId);
+    stopTimer();
+    startBtn.textContent = 'Start'; startBtn.classList.remove('stop'); startBtn.classList.add('start');
+    const final = computeFinalWpm();
+    updateStatsDisplay(final);
+    timerDisplay.textContent = `Time: ${timer.toFixed(1)}s`;
+  }
+
+  function stopReading() {
+    isRunning = false;
+    isSpaceHeld = false;
+    clearTimeout(intervalId);
+    stopTimer();
+    startBtn.textContent = 'Start'; startBtn.classList.remove('stop'); startBtn.classList.add('start');
+    const final = computeFinalWpm();
+    updateStatsDisplay(final);
+    timerDisplay.textContent = `Time: ${timer.toFixed(1)}s`;
+  }
+
+  function resetAll() {
+    clearTimeout(intervalId);
+    clearInterval(timerInterval);
+    intervalId = null; timerInterval = null;
+    timer = 0; lastTimerTick = null;
+    currentIndex = 0; wordsRead = 0; isRunning = false; isSpaceHeld = false;
+    wordBox.textContent = '';
+    hint.style.display = 'block';
+    startBtn.textContent = 'Start'; startBtn.classList.remove('stop'); startBtn.classList.add('start');
+    parseText();
+    updateStatsDisplay('-');
+    timerDisplay.textContent = `Time: 0.0s`;
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (isRunning) {
+      stopReading();
+    } else {
+      startReading();
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    resetAll();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      const active = document.activeElement;
+      const excluded = [inputText, speedInput, pauseInput, colorSelect];
+      if (excluded.includes(active) || active.tagName === 'SELECT' || active.isContentEditable) return;
+      if (!isRunning || isSpaceHeld) return;
+      e.preventDefault();
+      isSpaceHeld = true;
+      startTimer();
+      showWord();
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      if (!isSpaceHeld) return;
+      isSpaceHeld = false;
       clearTimeout(intervalId);
-      isRunning = false;
-      startBtn.textContent = 'Start';
-      startBtn.classList.remove('stop');
-      startBtn.classList.add('start');
-      if (finished) {
-        const elapsedMinutes = (Date.now() - startTime) / 60000;
-        const finalWPM = Math.round(wordsRead / elapsedMinutes);
-        statsDisplay.textContent += ` | Final WPM: ${finalWPM}`;
-      }
+      stopTimer();
     }
+  });
 
-    function startTimer() {
-      if (!timerInterval) {
-        timerInterval = setInterval(() => {
-          timer += 0.1;
-          timerDisplay.textContent = `Time: ${timer.toFixed(1)}s`;
-        }, 100);
-      }
-    }
+  inputText.addEventListener('input', () => {
+    const oldIndex = currentIndex;
+    parseText();
+    if (currentIndex > words.length) currentIndex = words.length;
+    updateStatsDisplay('-');
+  });
 
-    function stopTimer() {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
+  speedInput.addEventListener('input', () => { updateSettings(); });
+  pauseInput.addEventListener('input', () => { updateSettings(); });
+  colorSelect.addEventListener('change', () => {});
 
-    function updateStats() {
-      statsDisplay.textContent = `Words: ${totalWords} | Read: ${wordsRead} | Paragraphs: ${totalParagraphs} | Final WPM: -`;
-    }
-
-    startBtn.addEventListener('click', () => {
-      if (isRunning) {
-        stopReading();
-        stopTimer();
-      } else {
-        startReading();
-      }
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !isSpaceHeld && isRunning && document.activeElement !== inputText && document.activeElement !== speedInput && document.activeElement !== pauseInput) {
-        e.preventDefault();
-        isSpaceHeld = true;
-        startTimer();
-        showWord();
-      }
-    });
-
-    document.addEventListener('keyup', (e) => {
-      if (e.code === 'Space') {
-        isSpaceHeld = false;
-        clearTimeout(intervalId);
-        stopTimer();
-      }
-    });
-  </script>
+  parseText(); updateStatsDisplay('-');
+})();
+</script>
 </body>
 </html>
