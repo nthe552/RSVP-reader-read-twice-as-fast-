@@ -1,7 +1,8 @@
 To run:  
-1. Download and save HTML File
-2. Once installed Right click and select open with..
-3. run using browser of choice 
+1. Download and save file
+2. Once installed Right click and Rename to a ".html" file
+3. select open with.
+4. run using browser of choice 
 
 To use: 
 - Enter Text you would like to read into the Main text Box 
