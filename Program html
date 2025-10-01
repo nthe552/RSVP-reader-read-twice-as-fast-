@@ -94,13 +94,70 @@
     <div class="buttons">
       <button id="startBtn" class="start" title="Start or Stop reading">Start</button>
       <button id="resetBtn" class="reset" title="Reset to the beginning and clear stats">Reset</button>
-    </div>
+    </div><div class="controls" style="margin-top:8px">
+  <label for="pdfFile">PDF</label>
+  <input type="file" id="pdfFile" accept="application/pdf" />
+
+  <label for="urlInput">Web URL</label>
+  <input id="urlInput" type="text" placeholder="https://example.com" style="width:200px" />
+  <button id="loadUrlBtn">Load</button>
+</div>
+
 
     <div id="wordDisplay">
       <div class="word-box" id="wordBox"></div>
     </div>
     <div id="hint">Hold space bar to start</div>
   </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+<script>
+(() => {
+  const inputText = document.getElementById('inputText');
+  const pdfFile = document.getElementById('pdfFile');
+  const urlInput = document.getElementById('urlInput');
+  const loadUrlBtn = document.getElementById('loadUrlBtn');
+
+  // PDF loader
+  if (pdfFile) {
+    pdfFile.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async function() {
+        const typedarray = new Uint8Array(this.result);
+        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+        let textContent = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          textContent += content.items.map(s => s.str).join(' ') + "\n";
+        }
+        inputText.value = textContent;
+        inputText.dispatchEvent(new Event('input'));
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // Web loader (CORS limited)
+  if (loadUrlBtn) {
+    loadUrlBtn.addEventListener('click', async () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      try {
+        const res = await fetch(url);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        inputText.value = doc.body.innerText;
+        inputText.dispatchEvent(new Event('input'));
+      } catch {
+        alert('Failed to fetch URL (CORS may block this).');
+      }
+    });
+  }
+})();
+</script>
 
 <script>
 (() => {
